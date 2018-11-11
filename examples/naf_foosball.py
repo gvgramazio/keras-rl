@@ -1,20 +1,14 @@
 import argparse
 
 parser = argparse.ArgumentParser(description=('Run one episode of the foosball environment with random moves.'))
-parser.add_argument('--discrete', dest='continuous', action='store_false', help="If you want the discrete version")
 parser.add_argument('--single-player', dest='single_player', action='store_true', help='If you want the single player mode (the other player is automatically set to random)')
 args = parser.parse_args()
 
-if args.continuous:
-    if args.single_player:
-        ENV_NAME = 'Foosball_sp-v0'
-    else:
-        ENV_NAME = 'Foosball-v0'
+if args.single_player:
+    ENV_NAME = 'Foosball_sp-v0'
 else:
-    if args.single_player:
-        ENV_NAME = 'FoosballDiscrete_sp-v0'
-    else:
-        ENV_NAME = 'FoosballDiscrete-v0'
+    ENV_NAME = 'Foosball-v0'
+
 
 import numpy as np
 import gym, gym_foosball
