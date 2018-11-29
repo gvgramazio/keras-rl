@@ -9,6 +9,7 @@ from rl.agents import NAFAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 from rl.core import Processor
+from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 class PendulumProcessor(Processor):
     def process_reward(self, reward):
@@ -16,9 +17,16 @@ class PendulumProcessor(Processor):
         # high reward, we reduce the magnitude by two orders.
         return reward / 100.
 
+import string
+import random
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+rand_str = id_generator()
 
 ENV_NAME = 'Pendulum-v0'
-gym.undo_logger_setup()
+LOG_FILEPATH = 'naf_{}_'.format(ENV_NAME)+rand_str+'.json'
 
 
 # Get the environment and extract the number of actions.
@@ -80,10 +88,11 @@ agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-agent.fit(env, nb_steps=50000, visualize=True, verbose=1, nb_max_episode_steps=200)
+callbacks = [FileLogger(LOG_FILEPATH, interval=1)]
+agent.fit(env, nb_steps=100000, visualize=False, verbose=1, nb_max_episode_steps=200, callbacks=callbacks)
 
 # After training is done, we save the final weights.
-agent.save_weights('cdqn_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
+agent.save_weights('naf_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
 
 # Finally, evaluate our algorithm for 5 episodes.
 agent.test(env, nb_episodes=10, visualize=True, nb_max_episode_steps=200)

@@ -8,9 +8,18 @@ from keras.optimizers import Adam
 from rl.agents.dqn import DQNAgent
 from rl.policy import BoltzmannQPolicy
 from rl.memory import SequentialMemory
+from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
+import string
+import random
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+rand_str = id_generator()
 
 ENV_NAME = 'CartPole-v0'
+LOG_FILEPATH = 'duel_dqn_{}_'.format(ENV_NAME)+rand_str+'.json'
 
 
 # Get the environment and extract the number of actions.
@@ -46,7 +55,8 @@ dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-dqn.fit(env, nb_steps=50000, visualize=False, verbose=2)
+callbacks = [FileLogger(LOG_FILEPATH, interval=1)]
+dqn.fit(env, nb_steps=50000, visualize=False, verbose=1, callbacks=callbacks)
 
 # After training is done, we save the final weights.
 dqn.save_weights('duel_dqn_{}_weights.h5f'.format(ENV_NAME), overwrite=True)
