@@ -135,7 +135,7 @@ class TrainEpisodeLogger(Callback):
         self.train_start = timeit.default_timer()
         self.metrics_names = self.model.metrics_names
         print('Training for {} steps ...'.format(self.params['nb_steps']))
-        
+
     def on_train_end(self, logs):
         """ Print training time at end of training """
         duration = timeit.default_timer() - self.train_start
@@ -169,7 +169,7 @@ class TrainEpisodeLogger(Callback):
                 except Warning:
                     value = '--'
                     metrics_template += '{}: {}'
-                metrics_variables += [name, value]          
+                metrics_variables += [name, value]
         metrics_text = metrics_template.format(*metrics_variables)
 
         nb_step_digits = str(int(np.ceil(np.log10(self.params['nb_steps']))) + 1)
@@ -250,7 +250,7 @@ class TrainIntervalLogger(Callback):
                     assert means.shape == (len(self.metrics_names),)
                     for name, mean in zip(self.metrics_names, means):
                         formatted_metrics += ' - {}: {:.3f}'.format(name, mean)
-                
+
                 formatted_infos = ''
                 if len(self.infos) > 0:
                     infos = np.array(self.infos)
@@ -290,9 +290,13 @@ class FileLogger(Callback):
 
         # Some algorithms compute multiple episodes at once since they are multi-threaded.
         # We therefore use a dict that maps from episode to metrics array.
+        self.observations = {}
+        self.rewards = {}
+        self.actions = {}
         self.metrics = {}
         self.starts = {}
         self.data = {}
+        self.step = 0
 
     def on_train_begin(self, logs):
         """ Initialize model metrics before training """
@@ -306,12 +310,16 @@ class FileLogger(Callback):
         """ Initialize metrics at the beginning of each episode """
         assert episode not in self.metrics
         assert episode not in self.starts
+        self.observations[episode] = []
+        self.rewards[episode] = []
+        self.actions[episode] = []
         self.metrics[episode] = []
         self.starts[episode] = timeit.default_timer()
 
     def on_episode_end(self, episode, logs):
-        """ Compute and print metrics at the end of each episode """ 
+        """ Compute and print metrics at the end of each episode """
         duration = timeit.default_timer() - self.starts[episode]
+        episode_steps = len(self.observations[episode])
 
         metrics = self.metrics[episode]
         if np.isnan(metrics).all():
@@ -322,7 +330,22 @@ class FileLogger(Callback):
 
         data = list(zip(self.metrics_names, mean_metrics))
         data += list(logs.items())
-        data += [('episode', episode), ('duration', duration)]
+        data += [
+            ('episode', episode),
+            ('duration', duration),
+            ('step', self.step),
+            ('episode_steps', episode_steps),
+            ('sps', float(episode_steps) / duration),
+            ('reward_mean', np.mean(self.rewards[episode])),
+            ('reward_min', np.min(self.rewards[episode])),
+            ('reward_max', np.max(self.rewards[episode])),
+            ('action_mean', np.mean(self.actions[episode])),
+            ('action_min', np.min(self.actions[episode])),
+            ('action_max', np.max(self.actions[episode])),
+            ('obs_mean', np.mean(self.observations[episode])),
+            ('obs_min', np.min(self.observations[episode])),
+            ('obs_max', np.max(self.observations[episode]))
+        ]
         for key, value in data:
             if key not in self.data:
                 self.data[key] = []
@@ -332,12 +355,20 @@ class FileLogger(Callback):
             self.save_data()
 
         # Clean up.
+        del self.observations[episode]
+        del self.rewards[episode]
+        del self.actions[episode]
         del self.metrics[episode]
         del self.starts[episode]
 
     def on_step_end(self, step, logs):
         """ Append metric at the end of each step """
-        self.metrics[logs['episode']].append(logs['metrics'])
+        episode = logs['episode']
+        self.observations[episode].append(logs['observation'])
+        self.rewards[episode].append(logs['reward'])
+        self.actions[episode].append(logs['action'])
+        self.metrics[episode].append(logs['metrics'])
+        self.step += 1
 
     def save_data(self):
         """ Save metrics in a json file """
