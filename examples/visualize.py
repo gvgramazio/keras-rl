@@ -40,14 +40,14 @@ episode_reward = {}
 mean_q = {}
 mean_absolute_error = {}
 loss = {}
-episode_reward['mean'] = df.groupby('episode').episode_reward.mean().rolling(10).mean()
-episode_reward['std'] = df.groupby('episode').episode_reward.std().rolling(10).mean()
-mean_q['mean'] = df.groupby('episode').mean_q.mean().rolling(10).mean()
-mean_q['std'] = df.groupby('episode').mean_q.std().rolling(10).mean()
-mean_absolute_error['mean'] = df.groupby('episode').mean_absolute_error.mean().rolling(10).mean()
-mean_absolute_error['std'] = df.groupby('episode').mean_absolute_error.std().rolling(10).mean()
-loss['mean'] = df.groupby('episode').loss.mean().rolling(10).mean()
-loss['std'] = df.groupby('episode').loss.std().rolling(10).mean()
+episode_reward['mean'] = df.groupby('episode').episode_reward.mean().rolling(10, min_periods=1).mean()
+episode_reward['std'] = df.groupby('episode').episode_reward.std().rolling(10, min_periods=1).mean()
+mean_q['mean'] = df.groupby('episode').mean_q.mean().rolling(10, min_periods=1).mean()
+mean_q['std'] = df.groupby('episode').mean_q.std().rolling(10, min_periods=1).mean()
+mean_absolute_error['mean'] = df.groupby('episode').mean_absolute_error.mean().rolling(10, min_periods=1).mean()
+mean_absolute_error['std'] = df.groupby('episode').mean_absolute_error.std().rolling(10, min_periods=1).mean()
+loss['mean'] = df.groupby('episode').loss.mean().rolling(10, min_periods=1).mean()
+loss['std'] = df.groupby('episode').loss.std().rolling(10, min_periods=1).mean()
 
 # Configure figures
 plt.rc('text', usetex=True)
