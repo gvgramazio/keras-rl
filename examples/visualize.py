@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 
 # Filepath to .json file
 # e.g.
@@ -15,10 +16,11 @@ import numpy as np
 file_hashes = []
 agent = ''
 env = ''
+directory = ''
 
 assert len(file_hashes), "You need at least one file hash!"
 
-filenames = ['{}_{}_{}.json'.format(agent, env, h) for h in file_hashes]
+filenames = ['{}{}_{}_{}.json'.format(directory, agent, env, h) for h in file_hashes]
 
 figsize = {}
 figsize['x'] = 12.
@@ -29,10 +31,13 @@ subfigsize['x'] = 12.
 subfigsize['y'] = 4.5
 
 # Load all the simulations in a list of dataframes
-dfs = [pd.read_json(fn, orient='columns') for fn in filenames]
+# dfs = [pd.read_json(fn, orient='columns') for fn in filenames]
+raw_texts = [open(f, 'r') for f in filenames]
+raw_dfs = [json.loads(t.read()) for t in raw_texts]
+dfs = [pd.DataFrame(d) for d in raw_dfs]
 
 # Concatenate them
-df = pd.concat([d for d in dfs], ignore_index=True)
+df = pd.concat([d for d in dfs], ignore_index=True, sort=True)
 
 # Extract data to plot
 episode = df.episode.unique()
@@ -40,6 +45,7 @@ episode_reward = {}
 mean_q = {}
 mean_absolute_error = {}
 loss = {}
+episode_steps = {}
 episode_reward['mean'] = df.groupby('episode').episode_reward.mean().rolling(10, min_periods=1).mean()
 episode_reward['std'] = df.groupby('episode').episode_reward.std().rolling(10, min_periods=1).mean()
 mean_q['mean'] = df.groupby('episode').mean_q.mean().rolling(10, min_periods=1).mean()
@@ -48,6 +54,8 @@ mean_absolute_error['mean'] = df.groupby('episode').mean_absolute_error.mean().r
 mean_absolute_error['std'] = df.groupby('episode').mean_absolute_error.std().rolling(10, min_periods=1).mean()
 loss['mean'] = df.groupby('episode').loss.mean().rolling(10, min_periods=1).mean()
 loss['std'] = df.groupby('episode').loss.std().rolling(10, min_periods=1).mean()
+episode_steps['mean'] = df.groupby('episode').nb_episode_steps.mean().rolling(10, min_periods=1).mean()
+episode_steps['std'] = df.groupby('episode').nb_episode_steps.std().rolling(10, min_periods=1).mean()
 
 # Configure figures
 plt.rc('text', usetex=True)
@@ -124,6 +132,22 @@ plt.yticks(fontsize=20)
 figure['loss'].tight_layout()
 figure['loss'].savefig("plots/{}/{}/loss.pdf".format(env, agent), bbox_inches="tight", format="pdf");
 figure['loss'].savefig("plots/{}/{}/loss.png".format(env, agent), bbox_inches="tight", format="png");
+
+# Plot episode steps
+figure['episode_steps'] = plt.figure(figsize=(figsize['x'], figsize['y']))
+plt.fill_between(
+    episode,
+    episode_steps['mean'] - episode_steps['std'],
+    episode_steps['mean'] + episode_steps['std'],
+    color="#3F5D7D")
+plt.plot(episode, episode_steps['mean'], color="white", lw=2)
+plt.xlabel("episode", fontsize=32)
+plt.ylabel("episode steps", fontsize=32)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+figure['episode_steps'].tight_layout()
+figure['episode_steps'].savefig("plots/{}/{}/episode_steps.pdf".format(env, agent), bbox_inches="tight", format="pdf");
+figure['episode_steps'].savefig("plots/{}/{}/episode_steps.png".format(env, agent), bbox_inches="tight", format="png");
 
 # Plot everything
 figure['everything'], axes = plt.subplots(4, figsize=(subfigsize['x'], 4 * subfigsize['y']))
