@@ -15,10 +15,11 @@ import numpy as np
 file_hashes = []
 agent = ''
 env = ''
+directory = ''
 
 assert len(file_hashes), "You need at least one file hash!"
 
-filenames = ['{}_{}_{}.json'.format(agent, env, h) for h in file_hashes]
+filenames = ['{}{}_{}_{}.json'.format(directory, agent, env, h) for h in file_hashes]
 
 figsize = {}
 figsize['x'] = 12.
