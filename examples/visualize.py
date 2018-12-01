@@ -37,7 +37,7 @@ raw_dfs = [json.loads(t.read()) for t in raw_texts]
 dfs = [pd.DataFrame(d) for d in raw_dfs]
 
 # Concatenate them
-df = pd.concat([d for d in dfs], ignore_index=True)
+df = pd.concat([d for d in dfs], ignore_index=True, sort=True)
 
 # Extract data to plot
 episode = df.episode.unique()
