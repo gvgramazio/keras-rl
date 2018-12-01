@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 
 # Filepath to .json file
 # e.g.
@@ -30,7 +31,10 @@ subfigsize['x'] = 12.
 subfigsize['y'] = 4.5
 
 # Load all the simulations in a list of dataframes
-dfs = [pd.read_json(fn, orient='columns') for fn in filenames]
+# dfs = [pd.read_json(fn, orient='columns') for fn in filenames]
+raw_texts = [open(f, 'r') for f in filenames]
+raw_dfs = [json.loads(t.read()) for t in raw_texts]
+dfs = [pd.DataFrame(d) for d in raw_dfs]
 
 # Concatenate them
 df = pd.concat([d for d in dfs], ignore_index=True)
