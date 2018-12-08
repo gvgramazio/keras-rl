@@ -13,6 +13,24 @@ from rl.core import Processor
 from rl.callbacks import FileLogger, ModelIntervalCheckpoint
 
 class FoosballProcessor(Processor):
+    def process_step(self, observation, reward, done, info):
+        """Processes an entire step by applying the processor to the observation, reward, and info arguments.
+
+        # Arguments
+            observation (object): An observation as obtained by the environment.
+            reward (float): A reward as obtained by the environment.
+            done (boolean): `True` if the environment is in a terminal state, `False` otherwise.
+            info (dict): The debug info dictionary as obtained by the environment.
+
+        # Returns
+            The tupel (observation, reward, done, reward) with with all elements after being processed.
+        """
+        self.done = done
+        observation = self.process_observation(observation)
+        reward = self.process_reward(reward)
+        info = self.process_info(info)
+        return observation, reward, done, info
+
     def process_reward(self, reward):
         """Processes the reward as obtained from the environment for use in an agent and
         returns it.
@@ -23,7 +41,10 @@ class FoosballProcessor(Processor):
         # Returns
             Reward obtained by the environment processed
         """
-        return float(reward - 1) / 100.
+        if self.done:
+            return reward / 100.
+        else:
+            return (reward - 1) / 100.
 
 import string
 import random
